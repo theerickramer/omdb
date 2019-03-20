@@ -14,6 +14,5 @@ end
 get '/search' do
   response['Access-Control-Allow-Origin'] = 'http://localhost:8080'
   query = params[:q]
-  result = HTTParty.get("http://www.omdbapi.com/?apikey=#{OMDB_KEY}&t=#{query}")
-  json :result => result
+  json HTTParty.get("http://www.omdbapi.com/?apikey=#{OMDB_KEY}&t=#{query}")
 end

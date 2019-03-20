@@ -3,8 +3,11 @@
     <input v-model="searchText" placeholder="Search a movie title">
     <button @click="search">Search</button>
     <ul>
-      <li v-for="result in results" :key="result.imdbID">
-        {{ result.movie }}
+      <li v-for="result in results" :key="result.id">
+        <img :src="result.poster">
+        <h3>{{ result.title }}</h3>
+        <p>{{ result.year }}</p>
+        <p>{{ result.plot }}</p>
       </li>
     </ul>
   </div>
@@ -27,8 +30,16 @@ export default {
       fetch(`http://localhost:4567/search?q=${this.searchText}`)
         .then(response => response.json())
         .then(json => {
+          const {
+            imdbID: id,
+            Poster: poster,
+            Title: title,
+            Year: year,
+            Plot: plot
+          } = JSON.parse(json);
           this.searchText = '';
-          this.searchResults.push({ movie: json.result })
+          this.searchResults = [];
+          this.searchResults.push({ poster, title, year, plot });
         })
     }
   }
