@@ -2,24 +2,27 @@
   <div>
     <input v-model="searchText" placeholder="Search a movie title">
     <button @click="search">Search</button>
-    <div class="result" v-if="Object.keys(result).length">
-      <img :src="result.poster">
-      <h2>{{ result.title }}</h2>
-      <p>{{ result.year }}</p>
-      <p>{{ result.plot }}</p>
-      <div class="rating">
-        <h3>Rating & Comment</h3>
-        <select v-model="rating" @change="rate">
-          <option value="5 Stars">5 Stars</option>
-          <option value="4 Stars">4 Stars</option>
-          <option value="3 Stars">3 Stars</option>
-          <option value="2 Stars">2 Stars</option>
-          <option value="1 Star">1 Star</option>
-        </select>
-        <textarea v-model="comment" rows="8" cols="40"></textarea>
-        <button @click="rate">Comment</button>
-      </div>
-    </div>
+    <a @click="getSaved">All Saved</a>
+    <ul class="result" v-if="results.length">
+      <li v-for="result in results" :key="result.imdbID">
+        <img :src="result.Poster">
+        <h2>{{ result.Title }}</h2>
+        <p>{{ result.Year }}</p>
+        <p>{{ result.Plot }}</p>
+        <div class="rating">
+          <h3>Rating & Comment</h3>
+          <select v-model="rating">
+            <option value="5 Stars">5 Stars</option>
+            <option value="4 Stars">4 Stars</option>
+            <option value="3 Stars">3 Stars</option>
+            <option value="2 Stars">2 Stars</option>
+            <option value="1 Star">1 Star</option>
+          </select>
+          <textarea v-model="comment" rows="8" cols="40"></textarea>
+          <button @click="save">Save</button>
+        </div>
+      </li>
+    </ul>
   </div>
 </template>
 
@@ -30,13 +33,13 @@ export default {
   name: 'MovieSearch',
   data: () => ({
     searchText: '',
-    searchResult: {},
+    searchResults: [],
     rating: '',
     comment: ''
   }),
   computed: {
-    result: function() {
-      return this.searchResult;
+    results: function() {
+      return this.searchResults;
     },
     rated: {
       get: function() {
@@ -59,30 +62,34 @@ export default {
     search: function() {
       axios.get(`/search?q=${this.searchText}`)
         .then(response => {
-          let {
-            imdbID: id,
-            Poster: poster,
-            Title: title,
-            Year: year,
-            Plot: plot,
+          const data = JSON.parse(response.data);
+          let { Poster } = data;
+          const {
+            imdbID,
+            Title,
+            Year,
+            Plot,
             rating,
             comment
-          } = JSON.parse(response.data);
-          if (!poster) poster = 'http://www.citypages.com/img/movie-placeholder.gif';
-          this.searchResult = { id, poster, title, year, plot };
+          } = data;
+          if (!Poster) Poster = 'http://www.citypages.com/img/movie-placeholder.gif';
+          this.searchResults = [{ imdbID, Poster, Title, Year, Plot }];
           this.rated = rating;
           this.commented = comment;
           this.searchText = '';
         })
     },
-    rate: function() {
+    save: function() {
+      const movie = this.searchResults[0];
       axios.post(`/movie`, {
-        data: {
-          id: this.searchResult.id,
-          rating: this.rating,
-          comment: this.comment
-        }
+        data: { ...movie, rating: this.rating, comment: this.comment }
       })
+    },
+    getSaved: function() {
+      axios.get('/movies')
+        .then(response => {
+          this.searchResults = JSON.parse(response.data);
+        })
     }
   }
 }
@@ -90,6 +97,15 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+a {
+  margin-left: 25px;
+  color: blue;
+  cursor: pointer;
+}
+
+li {
+  list-style-type: none;
+}
 
 .result {
   margin-top: 25px;

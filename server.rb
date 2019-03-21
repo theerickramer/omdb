@@ -14,28 +14,31 @@ configure do
   set :mongo_db, db[:omdb]
 end
 
+db = settings.mongo_db
+
 set :public_folder, settings.root + '/client/dist'
 
 get '/' do
   send_file './client/dist/index.html'
 end
 
+get '/movies' do
+  json db.find.to_a.to_json
+end
+
 post '/movie' do
-  content_type :json
-  db = settings.mongo_db
   data =  JSON.parse(request.body.read)["data"]
   result = db.insert_one data
-  db.find(:_id => result.inserted_id).to_a.first.to_json
+  json db.find(:_id => result.inserted_id).to_a.first.to_json
 end
 
 get '/search' do
-  response['Access-Control-Allow-Origin'] = 'http://localhost:8080'
   query = params[:q]
   result = HTTParty.get("http://www.omdbapi.com/?apikey=#{OMDB_KEY}&t=#{query}").to_h
-  record = settings.mongo_db.find(id: result["imdbID"]).to_a.first
+  record = settings.mongo_db.find(imdbID: result["imdbID"]).to_a.first
   if record
-    result["rating"] = record[:rating]
-    result["comment"] = record[:comment]
+    json record.to_json
+  else
+    json result.to_json
   end
-  json result.to_json
 end
